@@ -5,6 +5,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { adminManagementService } from "../services/adminManagementService";
 import Header from "../components/common/Header";
+import ConfirmationModal from "../components/common/ConfirmationModal";
 
 const AdminManagementPage = () => {
   const { isDarkMode } = useTheme();
@@ -15,6 +16,9 @@ const AdminManagementPage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [deleteAdminId, setDeleteAdminId] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -63,7 +67,13 @@ const AdminManagementPage = () => {
 
   const handleUpdateAdmin = async (e) => {
     e.preventDefault();
+    setConfirmAction('update');
+    setShowConfirmModal(true);
+  };
+
+  const executeUpdateAdmin = async () => {
     try {
+      setShowConfirmModal(false);
       const updateData = { ...formData };
       // Remove password if not changed
       if (!updateData.password) {
@@ -81,11 +91,17 @@ const AdminManagementPage = () => {
   };
 
   const handleDeleteAdmin = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this admin?")) return;
-    
+    setDeleteAdminId(id);
+    setConfirmAction('delete');
+    setShowConfirmModal(true);
+  };
+
+  const executeDeleteAdmin = async () => {
     try {
-      await adminManagementService.deleteAdmin(id);
+      setShowConfirmModal(false);
+      await adminManagementService.deleteAdmin(deleteAdminId);
       alert("Admin deleted successfully");
+      setDeleteAdminId(null);
       fetchAdmins();
     } catch (error) {
       console.error("Error deleting admin:", error);
@@ -94,12 +110,34 @@ const AdminManagementPage = () => {
   };
 
   const handleToggleStatus = async (id) => {
+    // Find the admin to get their current status
+    const admin = admins.find(a => a._id === id);
+    if (!admin) return;
+
+    const action = admin.isActive ? 'deactivate' : 'activate';
+    const confirmMessage = admin.isActive 
+      ? `Are you sure you want to deactivate ${admin.name}? They will not be able to log in.`
+      : `Are you sure you want to activate ${admin.name}?`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
     try {
-      await adminManagementService.toggleAdminStatus(id);
-      fetchAdmins();
+      setLoading(true);
+      console.log(`Attempting to ${action} admin:`, id);
+      const response = await adminManagementService.toggleAdminStatus(id);
+      console.log('Toggle status response:', response);
+      
+      alert(`Admin ${action}d successfully!`);
+      await fetchAdmins();
     } catch (error) {
       console.error("Error toggling admin status:", error);
-      alert(error.response?.data?.message || "Failed to toggle admin status");
+      console.error("Error details:", error.response?.data);
+      const errorMsg = error.response?.data?.message || `Failed to ${action} admin. Please try again.`;
+      alert(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -254,9 +292,21 @@ const AdminManagementPage = () => {
                           </button>
                           <button
                             onClick={() => handleToggleStatus(admin._id)}
-                            className={admin.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
-                            title={admin.isActive ? 'Deactivate' : 'Activate'}
-                            disabled={admin._id === currentUser?._id}
+                            className={`transition-colors ${
+                              admin._id === currentUser?._id
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : admin.isActive 
+                                  ? 'text-orange-600 hover:text-orange-900' 
+                                  : 'text-green-600 hover:text-green-900'
+                            }`}
+                            title={
+                              admin._id === currentUser?._id
+                                ? 'Cannot deactivate your own account'
+                                : admin.isActive 
+                                  ? 'Deactivate' 
+                                  : 'Activate'
+                            }
+                            disabled={admin._id === currentUser?._id || loading}
                           >
                             <Power size={18} />
                           </button>
@@ -493,6 +543,29 @@ const AdminManagementPage = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmAction(null);
+          setDeleteAdminId(null);
+        }}
+        onConfirm={() => {
+          if (confirmAction === 'update') {
+            executeUpdateAdmin();
+          } else if (confirmAction === 'delete') {
+            executeDeleteAdmin();
+          }
+        }}
+        title={confirmAction === 'delete' ? 'Confirm Delete Admin' : 'Confirm Admin Changes'}
+        message={confirmAction === 'delete' 
+          ? 'To confirm and delete this admin, please enter "CONFIRM CHANGES". This action cannot be undone.'
+          : 'To confirm and save the changes to this admin profile, please enter "CONFIRM CHANGES".'}
+        confirmText="CONFIRM CHANGES"
+        isLoading={loading}
+      />
     </div>
   );
 };

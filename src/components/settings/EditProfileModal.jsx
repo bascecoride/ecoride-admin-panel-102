@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Save, Loader } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 const EditProfileModal = ({ isOpen, onClose, currentUser, onSave }) => {
   const { isDarkMode } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -49,9 +51,13 @@ const EditProfileModal = ({ isOpen, onClose, currentUser, onSave }) => {
       return;
     }
     
-    // Email is disabled and cannot be changed, so no need to validate it
-    
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  const executeUpdate = async () => {
     setIsLoading(true);
+    setShowConfirmModal(false);
     
     try {
       await onSave(formData);
@@ -239,6 +245,17 @@ const EditProfileModal = ({ isOpen, onClose, currentUser, onSave }) => {
               </div>
             </form>
           </motion.div>
+
+          {/* Confirmation Modal */}
+          <ConfirmationModal
+            isOpen={showConfirmModal}
+            onClose={() => setShowConfirmModal(false)}
+            onConfirm={executeUpdate}
+            title="Confirm Profile Changes"
+            message='To confirm and save the changes to your profile, please enter "CONFIRM CHANGES".'
+            confirmText="CONFIRM CHANGES"
+            isLoading={isLoading}
+          />
         </div>
       )}
     </AnimatePresence>

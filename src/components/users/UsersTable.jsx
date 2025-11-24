@@ -30,7 +30,7 @@ const UsersTable = ({
   const [sexFilter, setSexFilter] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState("");
-  const [documentFilter, setDocumentFilter] = useState("");
+  // documentFilter removed - all users must have documents to register
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -38,6 +38,7 @@ const UsersTable = ({
   const [showDisapproveModal, setShowDisapproveModal] = useState(false);
   const [disapproveUserId, setDisapproveUserId] = useState(null);
   const [disapproveReason, setDisapproveReason] = useState('');
+  const [rejectionDeadline, setRejectionDeadline] = useState('');
   const [disapproveLoading, setDisapproveLoading] = useState(false);
 
   // Apply filters when they change - with proper dependency array
@@ -49,11 +50,11 @@ const UsersTable = ({
         status: statusFilter,
         sex: sexFilter,
         userRole: userRoleFilter,
-        vehicleType: vehicleTypeFilter,
-        hasDocuments: documentFilter === "yes" ? true : documentFilter === "no" ? false : undefined
+        vehicleType: vehicleTypeFilter
+        // hasDocuments removed - all users must have documents to register
       });
     }
-  }, [searchTerm, roleFilter, statusFilter, sexFilter, userRoleFilter, vehicleTypeFilter, documentFilter, onFilterChange]);
+  }, [searchTerm, roleFilter, statusFilter, sexFilter, userRoleFilter, vehicleTypeFilter, onFilterChange]);
 
   // Handle search input
   const handleSearch = (e) => {
@@ -92,10 +93,7 @@ const UsersTable = ({
     setVehicleTypeFilter(e.target.value);
   };
   
-  // Handle document filter change
-  const handleDocumentFilter = (e) => {
-    setDocumentFilter(e.target.value);
-  };
+  // Document filter handler removed - all users must have documents to register
   
   // Toggle advanced filters
   const toggleAdvancedFilters = () => {
@@ -126,6 +124,7 @@ const UsersTable = ({
   const showDisapproveForm = (userId) => {
     setDisapproveUserId(userId);
     setDisapproveReason('');
+    setRejectionDeadline('');
     setShowDisapproveModal(true);
   };
   
@@ -139,10 +138,14 @@ const UsersTable = ({
     setDisapproveLoading(true);
     try {
       if (onDisapprove && disapproveUserId) {
-        await onDisapprove(disapproveUserId, { reason: disapproveReason });
+        await onDisapprove(disapproveUserId, { 
+          reason: disapproveReason,
+          rejectionDeadline: rejectionDeadline || null
+        });
         setShowDisapproveModal(false);
         setDisapproveUserId(null);
         setDisapproveReason('');
+        setRejectionDeadline('');
       }
     } catch (error) {
       console.error('Error disapproving user:', error);
@@ -156,6 +159,7 @@ const UsersTable = ({
     setShowDisapproveModal(false);
     setDisapproveUserId(null);
     setDisapproveReason('');
+    setRejectionDeadline('');
   };
 
   // Handle user deletion
@@ -287,18 +291,7 @@ const UsersTable = ({
               </div>
             )}
             
-            <div className="relative">
-              <label className={`block mb-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Documents</label>
-              <select
-                className={`block w-full py-2 px-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none ${isDarkMode ? 'border-gray-600 bg-gray-800 text-white' : 'border-gray-300 bg-gray-50 text-gray-900'} transition-colors duration-300`}
-                value={documentFilter}
-                onChange={handleDocumentFilter}
-              >
-                <option value="">All</option>
-                <option value="yes">Has Documents</option>
-                <option value="no">Missing Documents</option>
-              </select>
-            </div>
+            {/* Document filter removed - all users must have documents to register */}
           </div>
         )}
       </div>
@@ -536,8 +529,7 @@ const UsersTable = ({
                   status: statusFilter,
                   sex: sexFilter,
                   userRole: userRoleFilter,
-                  vehicleType: vehicleTypeFilter,
-                  hasDocuments: documentFilter === "yes" ? true : documentFilter === "no" ? false : undefined
+                  vehicleType: vehicleTypeFilter
                 });
               }
             } else {
@@ -566,16 +558,34 @@ const UsersTable = ({
             
             <div className="mb-6">
               <p className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} transition-colors duration-300`}>
-                Please provide a reason for disapproving this user. This information will be used for administrative purposes.
+                Please provide a reason for disapproving this user. This information will be sent to the user via email and shown in the app.
               </p>
               <div className="mb-4">
-                <label className={`block mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-300`}>Reason for Disapproval</label>
+                <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} transition-colors duration-300`}>
+                  Reason for Disapproval <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   value={disapproveReason}
                   onChange={(e) => setDisapproveReason(e.target.value)}
-                  className={`w-full rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900 border border-gray-300'} transition-colors duration-300`}
+                  className={`w-full rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[100px] ${isDarkMode ? 'bg-gray-700 text-white border border-gray-600' : 'bg-white text-gray-900 border border-gray-300'} transition-colors duration-300`}
                   placeholder="Enter detailed reason for disapproval..."
+                  required
                 />
+              </div>
+              <div className="mb-4">
+                <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} transition-colors duration-300`}>
+                  Rejection Deadline (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={rejectionDeadline}
+                  onChange={(e) => setRejectionDeadline(e.target.value)}
+                  className={`w-full rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-500 ${isDarkMode ? 'bg-gray-700 text-white border border-gray-600' : 'bg-white text-gray-900 border border-gray-300'} transition-colors duration-300`}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Set a deadline for the user to resubmit documents or appeal
+                </p>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button

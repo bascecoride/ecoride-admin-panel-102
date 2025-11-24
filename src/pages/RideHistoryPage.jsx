@@ -393,6 +393,35 @@ const RideHistoryPage = () => {
               <div className={`mt-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <span className="font-medium">Distance:</span> {formatDistance(ride.distance)}
               </div>
+
+              {/* Cancellation Details */}
+              {ride.status === 'CANCELLED' && (ride.cancellationReason || ride.cancelledBy) && (
+                <div className={`mt-4 p-4 rounded-lg border ${isDarkMode ? 'bg-red-900 bg-opacity-20 border-red-700' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-start">
+                    <AlertCircle size={16} className={`mr-2 mt-1 flex-shrink-0 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+                    <div className="flex-1">
+                      <span className={`text-xs font-medium ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>
+                        CANCELLATION DETAILS
+                      </span>
+                      {ride.cancelledByName && (
+                        <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          <span className="font-medium">Cancelled by:</span> {ride.cancelledByName} ({ride.cancelledBy})
+                        </p>
+                      )}
+                      {ride.cancellationReason && (
+                        <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          <span className="font-medium">Reason:</span> {ride.cancellationReason}
+                        </p>
+                      )}
+                      {ride.cancelledAt && (
+                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {formatDate(ride.cancelledAt)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
             );
           })}

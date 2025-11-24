@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, Loader, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Loader, Eye, EyeOff, X, ShieldAlert } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -12,6 +12,7 @@ const LoginPage = () => {
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("Invalid credentials");
   const [loading, setLoading] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -32,21 +33,30 @@ const LoginPage = () => {
       navigate("/");
     } catch (err) {
       console.error("Login error details:", err);
+      console.error("Error response data:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      
       let message = "Invalid credentials. Please check your email and password.";
       
       if (err.response) {
-        console.error("Error response:", err.response.data);
-        // Use server message if available, otherwise use default
+        // Use server message if available
         message = err.response.data?.message || message;
         
-        // Standardize "Invalid credentials" message
-        if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
+        // Keep specific messages for deactivated accounts
+        if (message.toLowerCase().includes('deactivated')) {
+          // Keep the deactivated message as-is
+        } else if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
+          // Standardize invalid credentials message
           message = "Invalid credentials. Please check your email and password.";
         }
+      } else {
+        // Network error or no response
+        message = "Unable to connect to server. Please check your connection.";
       }
       
       setErrorMessage(message);
       setError(true);
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -151,7 +161,7 @@ const LoginPage = () => {
           </button>
         </form>
 
-        {/* Error notification */}
+        {/* Error notification - inline */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -166,6 +176,95 @@ const LoginPage = () => {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Error Modal Popup */}
+      <AnimatePresence>
+        {showErrorModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowErrorModal(false)}
+              className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-md rounded-2xl shadow-2xl ${
+                isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              } transition-colors duration-300`}
+            >
+              {/* Header */}
+              <div className={`flex items-center justify-between p-6 border-b ${
+                isDarkMode ? 'border-gray-700' : 'border-gray-200'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-600 rounded-lg">
+                    <ShieldAlert className="text-white" size={24} />
+                  </div>
+                  <h2 className={`text-xl font-semibold ${
+                    isDarkMode ? 'text-gray-100' : 'text-gray-800'
+                  }`}>
+                    Login Failed
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200' 
+                      : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className={`mb-4 p-4 rounded-lg ${
+                  isDarkMode ? 'bg-red-900/20 border border-red-800' : 'bg-red-50 border border-red-200'
+                }`}>
+                  <p className={`text-sm ${
+                    isDarkMode ? 'text-red-300' : 'text-red-700'
+                  }`}>
+                    {errorMessage}
+                  </p>
+                </div>
+
+                <div className={`space-y-2 text-sm ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  <p className="font-medium">Please check:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Your email address is correct</li>
+                    <li>Your password is correct</li>
+                    <li>Your account is active</li>
+                    <li>You have admin privileges</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className={`flex justify-end gap-3 p-6 border-t ${
+                isDarkMode ? 'border-gray-700' : 'border-gray-200'
+              }`}>
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { X, CheckCircle, XCircle, Trash2, Edit3, Image as ImageIcon, ZoomIn, Zoo
 import { motion } from 'framer-motion';
 import { userService } from '../../services/userService';
 import { useTheme } from '../../context/ThemeContext';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 // Advanced image viewer component with full-screen modal and zoom controls
 const ImageViewer = ({ url, title }) => {
@@ -245,12 +246,13 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [showDisapproveForm, setShowDisapproveForm] = useState(false);
-  const [disapproveReason, setDisapproveReason] = useState('');
-  const [rejectionDeadline, setRejectionDeadline] = useState('');
-  const [showPenaltyForm, setShowPenaltyForm] = useState(false);
-  const [penaltyComment, setPenaltyComment] = useState('');
-  const [penaltyLiftDate, setPenaltyLiftDate] = useState('');
+  // Disapprove functionality removed - use inline disapprove in users table instead
+  // PENALTY FEATURE COMMENTED OUT - Using disapproval instead
+  // const [showPenaltyForm, setShowPenaltyForm] = useState(false);
+  // const [penaltyComment, setPenaltyComment] = useState('');
+  // const [penaltyLiftDate, setPenaltyLiftDate] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   
   // Local state for current user data (updates when user is modified)
   const [currentUser, setCurrentUser] = useState(user);
@@ -296,207 +298,155 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
     }
   };
 
-  // Show disapprove form
-  const showDisapproveUserForm = () => {
-    setDisapproveReason('');
-    setRejectionDeadline('');
-    setShowDisapproveForm(true);
-  };
+  // Disapprove functionality removed - use inline disapprove in users table instead
   
-  // Remove penalty
-  const handleRemovePenalty = async () => {
-    if (!window.confirm('Are you sure you want to remove this penalty?')) {
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-      
-      const updatedUser = await userService.addPenalty(user._id, { 
-        penaltyComment: '',
-        penaltyLiftDate: new Date('1970-01-01').toISOString() // Set to past date to remove
-      });
-      
-      console.log('Penalty removed successfully:', updatedUser);
-      
-      // Update local state to show penalty was removed
-      setCurrentUser(updatedUser);
-      setSuccess('Penalty removed successfully!');
-      
-      setTimeout(() => {
-        onUserUpdated(updatedUser);
-        onClose();
-      }, 1500);
-    } catch (err) {
-      console.error('Error removing penalty:', err);
-      setError(err.response?.data?.message || 'Failed to remove penalty. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // PENALTY FEATURE COMMENTED OUT - Using disapproval instead
+  // // Remove penalty
+  // const handleRemovePenalty = async () => {
+  //   if (!window.confirm('Are you sure you want to remove this penalty?')) {
+  //     return;
+  //   }
+  //   
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     setSuccess(null);
+  //     
+  //     const updatedUser = await userService.addPenalty(user._id, { 
+  //       penaltyComment: '',
+  //       penaltyLiftDate: new Date('1970-01-01').toISOString() // Set to past date to remove
+  //     });
+  //     
+  //     console.log('Penalty removed successfully:', updatedUser);
+  //     
+  //     // Update local state to show penalty was removed
+  //     setCurrentUser(updatedUser);
+  //     setSuccess('Penalty removed successfully!');
+  //     
+  //     setTimeout(() => {
+  //       onUserUpdated(updatedUser);
+  //       onClose();
+  //     }, 1500);
+  //   } catch (err) {
+  //     console.error('Error removing penalty:', err);
+  //     setError(err.response?.data?.message || 'Failed to remove penalty. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // Handle disapprove user
-  const handleDisapprove = async () => {
-    if (!disapproveReason.trim()) {
-      setError('Please provide a reason for disapproval');
-      return;
-    }
+  // PENALTY FEATURE COMMENTED OUT - Using disapproval instead
+  // // Show penalty form
+  // const showPenaltyCommentForm = () => {
+  //   if (user.status !== 'disapproved') {
+  //     setError('User must be disapproved before adding a penalty');
+  //     return;
+  //   }
+  //   
+  //   setPenaltyComment(user.penaltyComment || '');
+  //   // Set default lift date to 7 days from now if not already set
+  //   // Format for datetime-local input: YYYY-MM-DDTHH:mm
+  //   const defaultLiftDate = user.penaltyLiftDate 
+  //     ? new Date(user.penaltyLiftDate).toISOString().slice(0, 16)
+  //     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  //   setPenaltyLiftDate(defaultLiftDate);
+  //   setShowPenaltyForm(true);
+  // };
 
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-      
-      const requestData = { 
-        reason: disapproveReason,
-        rejectionDeadline: rejectionDeadline || null 
-      };
-      
-      console.log('🚀 Sending disapprove request with data:', requestData);
-      console.log('Reason:', disapproveReason);
-      console.log('Deadline:', rejectionDeadline);
-      
-      const updatedUser = await userService.disapproveUser(user._id, requestData);
-      console.log('✅ User disapproved successfully:', updatedUser);
-      console.log('✅ Returned disapprovalReason:', updatedUser.disapprovalReason);
-      
-      // Update local state to show the saved reason immediately
-      setCurrentUser(updatedUser);
-      
-      // Update the parent component with the new user data
-      onUserUpdated(updatedUser);
-      
-      // Hide the form and show success message
-      setShowDisapproveForm(false);
-      setSuccess('User disapproved successfully! Reason has been saved.');
-      
-      // Keep modal open so user can see the saved reason
-      // Clear success message after a few seconds
-      setTimeout(() => {
-        setSuccess(null);
-      }, 3000);
-    } catch (err) {
-      console.error('❌ Error in handleDisapprove:', err);
-      setError(err.response?.data?.message || 'Failed to disapprove user. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // PENALTY FEATURE COMMENTED OUT - Using disapproval instead
+  // // Handle add penalty comment
+  // const handleAddPenalty = async () => {
+  //   if (!penaltyComment.trim()) {
+  //     setError('Please provide a penalty comment');
+  //     return;
+  //   }
+  //
+  //   if (!penaltyLiftDate) {
+  //     setError('Please select a penalty lift date');
+  //     return;
+  //   }
+  //
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     
+  //     // Convert datetime-local format to ISO string
+  //     const liftDateISO = new Date(penaltyLiftDate).toISOString();
+  //     
+  //     console.log('Sending penalty data:', {
+  //       penaltyComment: penaltyComment.trim(),
+  //       penaltyLiftDate: liftDateISO
+  //     });
+  //     
+  //     const updatedUser = await userService.addPenalty(user._id, { 
+  //       penaltyComment: penaltyComment.trim(),
+  //       penaltyLiftDate: liftDateISO
+  //     });
+  //     
+  //     // Update local state to show the saved penalty immediately
+  //     setCurrentUser(updatedUser);
+  //     
+  //     // Update the local user object with the updated data
+  //     const updatedUserData = {
+  //       ...user,
+  //       penaltyComment,
+  //       penaltyLiftDate,
+  //       hasPenalty: true
+  //     };
+  //     
+  //     setShowPenaltyForm(false);
+  //     
+  //     // Only notify parent component if the user was actually updated
+  //     if (updatedUser) {
+  //       // Pass the updated user to the parent component
+  //       if (onUserUpdated) {
+  //         // Just pass the updated user without triggering additional API calls
+  //         onUserUpdated(updatedUserData);
+  //       }
+  //     }
+  //     
+  //     setSuccess('Penalty added successfully');
+  //   } catch (err) {
+  //     console.error('Error adding penalty:', err);
+  //     setError(err.response?.data?.message || 'Failed to add penalty. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // Cancel disapprove
-  const cancelDisapprove = () => {
-    setShowDisapproveForm(false);
-    setDisapproveReason('');
-    setRejectionDeadline('');
-  };
-
-  // Show penalty form
-  const showPenaltyCommentForm = () => {
-    if (user.status !== 'disapproved') {
-      setError('User must be disapproved before adding a penalty');
-      return;
-    }
-    
-    setPenaltyComment(user.penaltyComment || '');
-    // Set default lift date to 7 days from now if not already set
-    // Format for datetime-local input: YYYY-MM-DDTHH:mm
-    const defaultLiftDate = user.penaltyLiftDate 
-      ? new Date(user.penaltyLiftDate).toISOString().slice(0, 16)
-      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-    setPenaltyLiftDate(defaultLiftDate);
-    setShowPenaltyForm(true);
-  };
-
-  // Handle add penalty comment
-  const handleAddPenalty = async () => {
-    if (!penaltyComment.trim()) {
-      setError('Please provide a penalty comment');
-      return;
-    }
-
-    if (!penaltyLiftDate) {
-      setError('Please select a penalty lift date');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Convert datetime-local format to ISO string
-      const liftDateISO = new Date(penaltyLiftDate).toISOString();
-      
-      console.log('Sending penalty data:', {
-        penaltyComment: penaltyComment.trim(),
-        penaltyLiftDate: liftDateISO
-      });
-      
-      const updatedUser = await userService.addPenalty(user._id, { 
-        penaltyComment: penaltyComment.trim(),
-        penaltyLiftDate: liftDateISO
-      });
-      
-      // Update local state to show the saved penalty immediately
-      setCurrentUser(updatedUser);
-      
-      // Update the local user object with the updated data
-      const updatedUserData = {
-        ...user,
-        penaltyComment,
-        penaltyLiftDate,
-        hasPenalty: true
-      };
-      
-      setShowPenaltyForm(false);
-      
-      // Only notify parent component if the user was actually updated
-      if (updatedUser) {
-        // Pass the updated user to the parent component
-        if (onUserUpdated) {
-          // Just pass the updated user without triggering additional API calls
-          onUserUpdated(updatedUserData);
-        }
-      }
-      
-      setSuccess('Penalty added successfully');
-    } catch (err) {
-      console.error('Error adding penalty:', err);
-      setError(err.response?.data?.message || 'Failed to add penalty. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Cancel penalty comment
-  const cancelPenaltyComment = () => {
-    setShowPenaltyForm(false);
-    setPenaltyComment('');
-    setPenaltyLiftDate('');
-  };
+  // PENALTY FEATURE COMMENTED OUT - Using disapproval instead
+  // // Cancel penalty comment
+  // const cancelPenaltyComment = () => {
+  //   setShowPenaltyForm(false);
+  //   setPenaltyComment('');
+  //   setPenaltyLiftDate('');
+  // };
 
   // Handle delete user
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      try {
-        setLoading(true);
-        setError(null);
-        setSuccess(null);
-        await userService.deleteUser(user._id);
-        setSuccess('User deleted successfully!');
-        
-        // Wait a moment to show success message
-        setTimeout(() => {
-          onUserUpdated();
-          onClose();
-        }, 1500);
-      } catch (err) {
-        console.error('Error deleting user:', err);
-        setError(err.response?.data?.message || 'Failed to delete user. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+    setConfirmAction('delete');
+    setShowConfirmModal(true);
+  };
+
+  const executeDelete = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      setShowConfirmModal(false);
+      await userService.deleteUser(user._id);
+      setSuccess('User deleted successfully!');
+      
+      // Wait a moment to show success message
+      setTimeout(() => {
+        onUserUpdated();
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err.response?.data?.message || 'Failed to delete user. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -511,7 +461,12 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
   // Handle update user
   const handleUpdate = async (e) => {
     e.preventDefault();
-    console.log('🔄 handleUpdate called');
+    setConfirmAction('update');
+    setShowConfirmModal(true);
+  };
+
+  const executeUpdate = async () => {
+    console.log('🔄 executeUpdate called');
     console.log('📝 User data being sent:', userData);
     console.log('👤 User ID:', user._id);
     
@@ -519,6 +474,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
       setLoading(true);
       setError(null);
       setSuccess(null);
+      setShowConfirmModal(false);
       
       // Prepare data to send - only include role-specific fields
       const dataToSend = {
@@ -576,7 +532,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
         {/* Fixed Header */}
         <div className={`flex justify-between items-center p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} flex-shrink-0`}>
           <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>
-            {editMode ? 'Edit User' : showPenaltyForm ? 'Add Penalty Comment' : 'User Details'}
+            {editMode ? 'Edit User' : 'User Details'}
           </h2>
           <button 
             onClick={onClose}
@@ -604,91 +560,10 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
             </div>
           )}
 
-        {showDisapproveForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[60]">
-            <motion.div 
-              className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} shadow-xl transition-colors duration-300`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {user.disapprovalReason ? 'Edit Disapproval Reason' : 'Disapprove User'}
-                </h3>
-                <button 
-                  onClick={cancelDisapprove}
-                  className={`${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} transition-colors p-2 rounded-full hover:bg-gray-100 hover:bg-opacity-10`}
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              {error && (
-                <div className={`mb-4 p-3 rounded-lg ${isDarkMode ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800'} flex items-center`}>
-                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              
-              <div className="mb-4">
-                <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Reason for Disapproval
-                </label>
-                <textarea
-                  value={disapproveReason}
-                  onChange={(e) => setDisapproveReason(e.target.value)}
-                  className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                  rows="4"
-                  placeholder="Enter reason for disapproval..."
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Auto-Unblock Deadline (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={rejectionDeadline}
-                  onChange={(e) => setRejectionDeadline(e.target.value)}
-                  className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                  placeholder="Select deadline for automatic unblock..."
-                />
-                <p className={`mt-2 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  If set, the user will be automatically approved after this date/time
-                </p>
-              </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={cancelDisapprove}
-                  className={`px-4 py-2 rounded-md transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDisapprove}
-                  disabled={loading || !disapproveReason.trim()}
-                  className={`px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center ${(!disapproveReason.trim() || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {loading ? (
-                    <>
-                      <Loader size={16} className="mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    'Disapprove'
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+        {/* Disapprove form removed - use inline disapprove in users table instead */}
 
-        {showPenaltyForm && (
+        {/* PENALTY FEATURE COMMENTED OUT - Using disapproval instead */}
+        {/* {showPenaltyForm && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[60]">
             <motion.div 
               className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} shadow-xl transition-colors duration-300`}
@@ -781,9 +656,9 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
               </div>
             </motion.div>
           </div>
-        )}
+        )} */}
 
-        {!showPenaltyForm && !showDisapproveForm && editMode ? (
+        {editMode ? (
           <form onSubmit={handleUpdate}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -924,7 +799,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
               </button>
             </div>
           </form>
-        ) : !showPenaltyForm && !showDisapproveForm ? (
+        ) : (
           <div>
             <div className="grid grid-cols-1 gap-4 mb-6">
               <div className="space-y-3">
@@ -987,7 +862,8 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                     </div>
                   </div>
                 )}
-                {currentUser.penaltyComment && (
+                {/* PENALTY FEATURE COMMENTED OUT - Using disapproval instead */}
+                {/* {currentUser.penaltyComment && (
                   <div className="mt-2 p-3 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
@@ -1015,7 +891,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                       </button>
                     </div>
                   </div>
-                )}
+                )} */}
                 <div>
                   <h3 className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>Registered On</h3>
                   <p className={`${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>
@@ -1078,12 +954,13 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                 {user.role === 'rider' && (
                   <>
                     <ImageViewer url={user.driverLicense} title="Driver's License" />
-                    <ImageViewer url={user.cor} title="Certificate of Registration" />
+                    <ImageViewer url={user.orCr} title="OR/CR (Official Receipt/Certificate of Registration)" />
+                    <ImageViewer url={user.cor} title="Certificate of Registration (Student)" />
                   </>
                 )}
                 
                 {!user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && 
-                 !user.driverLicense && !user.cor && (
+                 !user.driverLicense && !user.cor && !user.orCr && (
                   <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>
                     No documents uploaded
                   </p>
@@ -1112,21 +989,23 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                   Approve
                 </button>
               )}
-              {(user.status === 'pending' || user.status === 'approved') && (
+              {/* Disapprove button removed - use inline disapprove in users table instead */}
+              {user.status === "disapproved" && (
                 <button
-                  onClick={showDisapproveUserForm}
+                  onClick={handleApprove}
                   disabled={loading}
-                  className={`px-4 py-2 rounded-md flex items-center ${isDarkMode ? 'bg-yellow-700 hover:bg-yellow-600' : 'bg-yellow-600 hover:bg-yellow-500'} text-white transition-colors duration-200`}
+                  className={`px-4 py-2 rounded-md flex items-center ${isDarkMode ? 'bg-green-700 hover:bg-green-600' : 'bg-green-600 hover:bg-green-700'} text-white transition-colors duration-200`}
                 >
                   {loading ? (
                     <Loader size={16} className="mr-2 animate-spin" />
                   ) : (
-                    <XCircle size={16} className="mr-2" />
+                    <CheckCircle size={16} className="mr-2" />
                   )}
-                  Disapprove
+                  Approve
                 </button>
               )}
-              {user.status === "disapproved" && (
+              {/* PENALTY BUTTON COMMENTED OUT - Using disapproval instead */}
+              {/* {user.status === "disapproved" && (
                 <button
                   onClick={showPenaltyCommentForm}
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-500 transition-colors flex items-center"
@@ -1135,7 +1014,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                   <Edit3 size={16} className="mr-1" />
                   {user.penaltyComment ? 'Edit Penalty' : 'Add Penalty'}
                 </button>
-              )}
+              )} */}
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors flex items-center"
@@ -1146,9 +1025,31 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
               </button>
             </div>
           </div>
-        ) : null}
+        )}
         </div>
       </motion.div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmAction(null);
+        }}
+        onConfirm={() => {
+          if (confirmAction === 'update') {
+            executeUpdate();
+          } else if (confirmAction === 'delete') {
+            executeDelete();
+          }
+        }}
+        title={confirmAction === 'delete' ? 'Confirm Delete' : 'Confirm Changes'}
+        message={confirmAction === 'delete' 
+          ? 'To confirm and delete this user, please enter "CONFIRM CHANGES". This action cannot be undone.'
+          : 'To confirm and save the changes, please enter "CONFIRM CHANGES".'}
+        confirmText="CONFIRM CHANGES"
+        isLoading={loading}
+      />
     </div>
   );
 };

@@ -2,6 +2,8 @@ import Header from "../components/common/Header";
 import Profile from "../components/settings/Profile";
 import AccountInfo from "../components/settings/AccountInfo";
 import ChangePassword from "../components/settings/ChangePassword";
+import FareRateManagement from "../components/settings/FareRateManagement";
+import TermsAndConditions from "../components/settings/TermsAndConditions";
 import DangerZone from "../components/settings/DangerZone";
 import { useTheme } from "../context/ThemeContext";
 
@@ -20,6 +22,12 @@ const SettingsPage = () => {
 				
 				{/* Change Password */}
 				<ChangePassword />
+				
+				{/* Fare Rate Management */}
+				<FareRateManagement />
+				
+				{/* Terms and Conditions Management */}
+				<TermsAndConditions />
 				
 				{/* Logout Section */}
 				<DangerZone /> 

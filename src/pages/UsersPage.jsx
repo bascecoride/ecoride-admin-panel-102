@@ -46,8 +46,8 @@ const UsersPage = () => {
     status: '',
     sex: '',
     userRole: '',
-    vehicleType: '',
-    hasDocuments: undefined
+    vehicleType: ''
+    // hasDocuments filter removed - all users must have documents to register
   });
   
   // Flag to track initial load
@@ -250,10 +250,10 @@ const UsersPage = () => {
   };
 
   // Handle filter changes - apply filters client-side only
-  const handleFilterChange = useCallback(({ search, role, status, sex, userRole, vehicleType, hasDocuments }) => {
+  const handleFilterChange = useCallback(({ search, role, status, sex, userRole, vehicleType }) => {
     try {
       // Update filters state
-      setFilters({ search, role, status, sex, userRole, vehicleType, hasDocuments });
+      setFilters({ search, role, status, sex, userRole, vehicleType });
       
       // Validate users array
       if (!Array.isArray(users) || users.length === 0) {
@@ -300,22 +300,7 @@ const UsersPage = () => {
       filtered = filtered.filter(user => user.vehicleType === vehicleType);
     }
     
-    // Apply document filter
-    if (hasDocuments !== undefined) {
-      if (hasDocuments) {
-        // Has at least one document
-        filtered = filtered.filter(user => {
-          return user.photo || user.schoolIdDocument || user.staffFacultyIdDocument || 
-                 user.driverLicense || user.cor;
-        });
-      } else {
-        // Missing all documents
-        filtered = filtered.filter(user => {
-          return !user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && 
-                 !user.driverLicense && !user.cor;
-        });
-      }
-    }
+    // Document filter removed - all users must have documents to register
     
     setFilteredUsers(filtered);
     } catch (error) {

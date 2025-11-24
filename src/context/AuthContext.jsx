@@ -38,7 +38,8 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error("Login failed:", error);
-      return false;
+      // Re-throw the error so LoginPage can catch it and show the modal
+      throw error;
     }
   };
 
