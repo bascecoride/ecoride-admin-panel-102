@@ -5,7 +5,7 @@ const API_URL = `${API_BASE_URL}/api/fare-rates`;
 
 // Get auth token from localStorage
 const getAuthToken = () => {
-	const token = localStorage.getItem('admin_token');
+	const token = localStorage.getItem('admin_access_token');
 	return token;
 };
 
