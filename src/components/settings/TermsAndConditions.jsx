@@ -19,6 +19,7 @@ const TermsAndConditions = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [updatedBy, setUpdatedBy] = useState(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     fetchActiveTerms();
@@ -127,11 +128,43 @@ Welcome to EcoRide-BASC, a ride-sharing system developed to promote an eco-frien
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset to the current saved version?')) {
-      fetchActiveTerms();
+  const handleResetToDefaults = async () => {
+    if (!window.confirm('Are you sure you want to reset the Terms and Conditions to the default version?\n\nThis will replace the current content with the original EcoRide-BASC Terms and Conditions.')) {
+      return;
+    }
+
+    try {
+      setIsResetting(true);
       setError('');
       setSuccess('');
+
+      const defaultContent = getDefaultTerms();
+      const defaultVersion = '1.0';
+
+      const token = localStorage.getItem('admin_access_token');
+      const response = await axios.post(
+        `${API_URL}/api/terms/update`,
+        { content: defaultContent, version: defaultVersion },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setContent(defaultContent);
+      setVersion(defaultVersion);
+      setLastUpdated(response.data.terms.lastUpdated);
+      setUpdatedBy(response.data.terms.updatedBy);
+
+      // Refresh history
+      await fetchTermsHistory();
+
+      setSuccess('Terms and Conditions reset to default version successfully!');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error resetting terms:', error);
+      setError(error.response?.data?.message || 'Failed to reset terms and conditions');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -349,16 +382,25 @@ Welcome to EcoRide-BASC, a ride-sharing system developed to promote an eco-frien
           )}
         </button>
         <button
-          onClick={handleReset}
-          disabled={loading}
+          onClick={handleResetToDefaults}
+          disabled={loading || isResetting}
           className={`px-4 py-2 rounded-lg transition-colors ${
             isDarkMode
               ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-          } font-medium`}
+          } font-medium ${(loading || isResetting) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          <RefreshCw size={18} className="inline mr-2" />
-          Reset
+          {isResetting ? (
+            <>
+              <RefreshCw size={18} className="inline mr-2 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              <RefreshCw size={18} className="inline mr-2" />
+              Reset to Default
+            </>
+          )}
         </button>
       </div>
     </motion.div>

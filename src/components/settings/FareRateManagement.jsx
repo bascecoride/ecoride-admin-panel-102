@@ -9,8 +9,16 @@ const FareRateManagement = () => {
 	const [fareRates, setFareRates] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isResetting, setIsResetting] = useState(false);
 	const [message, setMessage] = useState({ type: '', text: '' });
 	const [editedRates, setEditedRates] = useState({});
+
+	// Default fare rates for reset functionality
+	const defaultFareRates = {
+		"Single Motorcycle": { minimumRate: 15, perKmRate: 2.5 },
+		"Tricycle": { minimumRate: 20, perKmRate: 2.8 },
+		"Cab": { minimumRate: 30, perKmRate: 3 }
+	};
 
 	// Vehicle type configurations
 	const vehicleConfig = {
@@ -124,6 +132,41 @@ const FareRateManagement = () => {
 				edited.perKmRate !== rate.perKmRate
 			);
 		});
+	};
+
+	const handleResetToDefaults = async () => {
+		if (!window.confirm('Are you sure you want to reset all fare rates to their default values?\n\nDefault values:\n• Single Motorcycle: ₱15 min, ₱2.5/km\n• Tricycle: ₱20 min, ₱2.8/km\n• Cab: ₱30 min, ₱3/km')) {
+			return;
+		}
+
+		try {
+			setIsResetting(true);
+			setMessage({ type: '', text: '' });
+
+			// Prepare default rates for bulk update
+			const ratesToUpdate = Object.keys(defaultFareRates).map(vehicleType => ({
+				vehicleType,
+				minimumRate: defaultFareRates[vehicleType].minimumRate,
+				perKmRate: defaultFareRates[vehicleType].perKmRate
+			}));
+
+			await fareRateService.bulkUpdateFareRates(ratesToUpdate);
+
+			// Refresh data from server
+			await fetchFareRates();
+
+			setMessage({ type: 'success', text: 'Fare rates reset to default values successfully!' });
+
+			// Clear message after 3 seconds
+			setTimeout(() => {
+				setMessage({ type: '', text: '' });
+			}, 3000);
+		} catch (error) {
+			console.error('Error resetting fare rates:', error);
+			setMessage({ type: 'error', text: error.message || 'Failed to reset fare rates' });
+		} finally {
+			setIsResetting(false);
+		}
 	};
 
 	return (
@@ -318,16 +361,25 @@ const FareRateManagement = () => {
 						</button>
 
 						<button
-							onClick={fetchFareRates}
-							disabled={isSaving}
+							onClick={handleResetToDefaults}
+							disabled={isSaving || isResetting}
 							className={`flex items-center justify-center space-x-2 py-2.5 px-6 rounded-lg font-semibold transition-all duration-200 ${
 								isDarkMode
 									? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
 									: 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-							} ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+							} ${(isSaving || isResetting) ? 'opacity-50 cursor-not-allowed' : ''}`}
 						>
-							<RefreshCw size={18} />
-							<span>Reset</span>
+							{isResetting ? (
+								<>
+									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+									<span>Resetting...</span>
+								</>
+							) : (
+								<>
+									<RefreshCw size={18} />
+									<span>Reset to Defaults</span>
+								</>
+							)}
 						</button>
 					</div>
 				</>

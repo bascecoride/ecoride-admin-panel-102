@@ -10,7 +10,11 @@ const DistanceRadiusManagement = () => {
 	const [originalValue, setOriginalValue] = useState(3);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isResetting, setIsResetting] = useState(false);
 	const [message, setMessage] = useState({ type: '', text: '' });
+
+	// Default distance radius value
+	const DEFAULT_DISTANCE_RADIUS = 3; // 3km
 
 	useEffect(() => {
 		fetchDistanceRadius();
@@ -78,6 +82,37 @@ const DistanceRadiusManagement = () => {
 
 	const getRadiusInMeters = () => {
 		return distanceRadius * 1000;
+	};
+
+	const handleResetToDefaults = async () => {
+		if (!window.confirm(`Are you sure you want to reset the distance radius to the default value?\n\nDefault value: ${DEFAULT_DISTANCE_RADIUS} km (${DEFAULT_DISTANCE_RADIUS * 1000} meters)`)) {
+			return;
+		}
+
+		try {
+			setIsResetting(true);
+			setMessage({ type: '', text: '' });
+
+			await appSettingsService.updateSetting(
+				'DISTANCE_RADIUS',
+				DEFAULT_DISTANCE_RADIUS,
+				'Maximum distance radius for showing nearby riders/bookings'
+			);
+
+			setDistanceRadius(DEFAULT_DISTANCE_RADIUS);
+			setOriginalValue(DEFAULT_DISTANCE_RADIUS);
+			setMessage({ type: 'success', text: `Distance radius reset to default (${DEFAULT_DISTANCE_RADIUS} km) successfully!` });
+
+			// Clear message after 5 seconds
+			setTimeout(() => {
+				setMessage({ type: '', text: '' });
+			}, 5000);
+		} catch (error) {
+			console.error('Error resetting distance radius:', error);
+			setMessage({ type: 'error', text: error.message || 'Failed to reset distance radius' });
+		} finally {
+			setIsResetting(false);
+		}
 	};
 
 	return (
@@ -278,16 +313,25 @@ const DistanceRadiusManagement = () => {
 						</button>
 
 						<button
-							onClick={fetchDistanceRadius}
-							disabled={isSaving}
+							onClick={handleResetToDefaults}
+							disabled={isSaving || isResetting}
 							className={`flex items-center justify-center space-x-2 py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
 								isDarkMode
 									? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
 									: 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-							} ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+							} ${(isSaving || isResetting) ? 'opacity-50 cursor-not-allowed' : ''}`}
 						>
-							<RefreshCw size={18} />
-							<span>Reset</span>
+							{isResetting ? (
+								<>
+									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+									<span>Resetting...</span>
+								</>
+							) : (
+								<>
+									<RefreshCw size={18} />
+									<span>Reset to Default</span>
+								</>
+							)}
 						</button>
 					</div>
 
