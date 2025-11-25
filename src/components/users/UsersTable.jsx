@@ -581,7 +581,7 @@ const UsersTable = ({
                   value={rejectionDeadline}
                   onChange={(e) => setRejectionDeadline(e.target.value)}
                   className={`w-full rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-500 ${isDarkMode ? 'bg-gray-700 text-white border border-gray-600' : 'bg-white text-gray-900 border border-gray-300'} transition-colors duration-300`}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}
                 />
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Set a deadline for the user to resubmit documents or appeal

@@ -3,6 +3,7 @@ import Profile from "../components/settings/Profile";
 import AccountInfo from "../components/settings/AccountInfo";
 import ChangePassword from "../components/settings/ChangePassword";
 import FareRateManagement from "../components/settings/FareRateManagement";
+import DistanceRadiusManagement from "../components/settings/DistanceRadiusManagement";
 import TermsAndConditions from "../components/settings/TermsAndConditions";
 import DangerZone from "../components/settings/DangerZone";
 import { useTheme } from "../context/ThemeContext";
@@ -25,6 +26,9 @@ const SettingsPage = () => {
 				
 				{/* Fare Rate Management */}
 				<FareRateManagement />
+				
+				{/* Distance Radius Management */}
+				<DistanceRadiusManagement />
 				
 				{/* Terms and Conditions Management */}
 				<TermsAndConditions />

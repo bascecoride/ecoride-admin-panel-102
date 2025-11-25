@@ -494,6 +494,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
       } else if (userData.role === 'rider') {
         dataToSend.licenseId = userData.licenseId;
         dataToSend.vehicleType = userData.vehicleType;
+        dataToSend.plateNumber = userData.plateNumber;
       }
       
       console.log('📤 Sending update request with filtered data:', dataToSend);
@@ -778,6 +779,17 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                       <option value="Cab">Cab</option>
                     </select>
                   </div>
+                  <div>
+                    <label className={`block mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} transition-colors duration-300`}>Plate Number</label>
+                    <input
+                      type="text"
+                      name="plateNumber"
+                      value={userData.plateNumber || ''}
+                      onChange={handleChange}
+                      placeholder="Enter plate number"
+                      className={`w-full rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900 border border-gray-300'} transition-colors duration-300`}
+                    />
+                  </div>
                 </>
               )}
             </div>
@@ -843,7 +855,15 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                           <div className="mt-2">
                             <span className={`text-sm font-medium ${isDarkMode ? 'text-yellow-300' : 'text-yellow-600'} transition-colors duration-300`}>Auto-unblock: </span>
                             <span className={`${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>
-                              {new Date(currentUser.rejectionDeadline).toLocaleString()}
+                              {new Date(currentUser.rejectionDeadline).toLocaleString('en-PH', { 
+                                timeZone: 'Asia/Manila',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
                             </span>
                           </div>
                         )}
@@ -928,6 +948,10 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                     <div>
                       <h3 className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>Vehicle Type</h3>
                       <p className={`${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>{user.vehicleType || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <h3 className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>Plate Number</h3>
+                      <p className={`${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>{user.plateNumber || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>

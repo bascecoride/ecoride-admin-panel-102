@@ -2,9 +2,11 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Users, Car, MapPin, DollarSign } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 
 const AnalyticsOverviewCards = ({ data }) => {
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
@@ -28,6 +30,8 @@ const AnalyticsOverviewCards = ({ data }) => {
       description: `${data.userStats.gender.male.total || 0} male, ${
         data.userStats.gender.female.total || 0
       } female`,
+      clickable: true,
+      onClick: () => navigate("/users"),
     },
     {
       title: "Total Rides",
@@ -35,6 +39,8 @@ const AnalyticsOverviewCards = ({ data }) => {
       icon: Car,
       color: "green",
       description: `${data.completedRides || 0} completed rides`,
+      clickable: true,
+      onClick: () => navigate("/ride-history"),
     },
     {
       title: "Total Distance",
@@ -42,6 +48,7 @@ const AnalyticsOverviewCards = ({ data }) => {
       icon: MapPin,
       color: "purple",
       description: "Total distance traveled",
+      clickable: false,
     },
     {
       title: "Total Revenue",
@@ -49,6 +56,7 @@ const AnalyticsOverviewCards = ({ data }) => {
       icon: DollarSign,
       color: "amber",
       description: "From completed rides",
+      clickable: false,
     },
   ];
 
@@ -60,10 +68,15 @@ const AnalyticsOverviewCards = ({ data }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
-          className={`rounded-xl p-6 print:bg-white print:border print:border-gray-200 print:text-black transition-colors duration-300 ${
+          onClick={card.clickable ? card.onClick : undefined}
+          className={`rounded-xl p-6 print:bg-white print:border print:border-gray-200 print:text-black transition-all duration-300 ${
             isDarkMode 
               ? 'bg-gray-700 bg-opacity-50 backdrop-filter backdrop-blur-lg border border-gray-600' 
               : 'bg-white shadow-lg border border-gray-200'
+          } ${
+            card.clickable 
+              ? 'cursor-pointer hover:scale-105 hover:shadow-xl ' + (isDarkMode ? 'hover:border-blue-500' : 'hover:border-blue-400')
+              : ''
           }`}
         >
           <div className="flex items-center justify-between">
@@ -72,6 +85,11 @@ const AnalyticsOverviewCards = ({ data }) => {
                 isDarkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 {card.title}
+                {card.clickable && (
+                  <span className={`ml-2 text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                    (Click to view)
+                  </span>
+                )}
               </p>
               <p className={`mt-1 text-2xl font-semibold print:text-gray-900 transition-colors duration-300 ${
                 isDarkMode ? 'text-white' : 'text-gray-900'

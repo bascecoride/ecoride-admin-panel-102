@@ -15,7 +15,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Navigation
+  Navigation,
+  Users,
+  Landmark
 } from "lucide-react";
 import { rideService } from "../services/rideService";
 import { useTheme } from "../context/ThemeContext";
@@ -384,14 +386,35 @@ const RideHistoryPage = () => {
                       <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {ride.drop?.address}
                       </p>
+                      {/* Landmark Description */}
+                      {ride.drop?.landmark && (
+                        <div className={`mt-2 flex items-start p-2 rounded ${isDarkMode ? 'bg-yellow-900 bg-opacity-30 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200'}`}>
+                          <Landmark size={14} className={`mr-2 mt-0.5 flex-shrink-0 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                          <div>
+                            <span className={`text-xs font-medium ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>LANDMARK</span>
+                            <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {ride.drop.landmark}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Distance */}
-              <div className={`mt-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="font-medium">Distance:</span> {formatDistance(ride.distance)}
+              {/* Distance and Passenger Count */}
+              <div className={`mt-4 flex flex-wrap gap-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div>
+                  <span className="font-medium">Distance:</span> {formatDistance(ride.distance)}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users size={16} className={`${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <span className="font-medium">Passengers:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${isDarkMode ? 'bg-green-900 bg-opacity-30 text-green-400' : 'bg-green-100 text-green-700'}`}>
+                    {ride.passengerCount || 1}
+                  </span>
+                </div>
               </div>
 
               {/* Cancellation Details */}

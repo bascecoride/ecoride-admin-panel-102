@@ -8,23 +8,13 @@ export const authService = {
     try {
       console.log('Attempting login with:', { email });
       
-      // Try the new admin management login endpoint first
-      let response;
-      try {
-        response = await axios.post(`${API_BASE_URL}/api/admin-management/login`, {
-          email,
-          password
-        });
-        console.log('Admin management login successful:', response.data);
-      } catch (adminError) {
-        // Fallback to old admin login endpoint
-        console.log('Trying fallback admin login endpoint...');
-        response = await axios.post(`${API_BASE_URL}/api/auth/admin-login`, {
-          email,
-          password
-        });
-        console.log('Fallback login successful:', response.data);
-      }
+      // Use only the admin management login endpoint (has lockout protection)
+      // Do NOT fallback to legacy endpoint as it would record duplicate attempts
+      const response = await axios.post(`${API_BASE_URL}/api/admin-management/login`, {
+        email,
+        password
+      });
+      console.log('Admin login successful:', response.data);
       
       // Store tokens in localStorage
       localStorage.setItem('admin_access_token', response.data.access_token);

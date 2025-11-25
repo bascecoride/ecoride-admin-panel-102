@@ -125,6 +125,42 @@ export const analyticsService = {
       console.error('Error fetching debug data:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  // Get vehicle breakdown analytics
+  getVehicleBreakdown: async (timeFilter = 'all') => {
+    try {
+      const request = createAuthenticatedRequest();
+      const response = await request.get(`/api/analytics/vehicle-breakdown?timeFilter=${timeFilter}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching vehicle breakdown:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Get payment method analytics
+  getPaymentMethodAnalytics: async (timeFilter = 'all') => {
+    try {
+      const request = createAuthenticatedRequest();
+      const response = await request.get(`/api/analytics/payment-methods?timeFilter=${timeFilter}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment method analytics:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Get ride status breakdown
+  getRideStatusBreakdown: async (timeFilter = 'all') => {
+    try {
+      const request = createAuthenticatedRequest();
+      const response = await request.get(`/api/analytics/ride-status-breakdown?timeFilter=${timeFilter}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching ride status breakdown:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 

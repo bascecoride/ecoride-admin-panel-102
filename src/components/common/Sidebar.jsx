@@ -7,7 +7,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 const SIDEBAR_ITEMS = [
 	{
-		name: "Overview",
+		name: "Overview & Analytics",
 		icon: BarChart2,
 		color: "#6366f1",
 		href: "/",

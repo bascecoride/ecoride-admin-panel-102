@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, Loader, Eye, EyeOff, X, ShieldAlert } from "lucide-react";
+import { AlertCircle, Loader, Eye, EyeOff, X, ShieldAlert, Lock, Clock, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -13,9 +15,113 @@ const LoginPage = () => {
   const [errorMessage, setErrorMessage] = useState("Invalid credentials");
   const [loading, setLoading] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  
+  // Lockout state
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockoutRemainingSeconds, setLockoutRemainingSeconds] = useState(0);
+  const [attemptsRemaining, setAttemptsRemaining] = useState(null);
+  const [warningMessage, setWarningMessage] = useState(null);
+  
   const navigate = useNavigate();
   const { login } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+
+  // Format seconds to MM:SS
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Check lockout status from server (the source of truth)
+  const checkServerLockoutStatus = useCallback(async (emailToCheck) => {
+    if (!emailToCheck || !emailToCheck.includes('@')) return;
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/admin-management/check-lockout`, {
+        email: emailToCheck
+      });
+      
+      const data = response.data;
+      console.log('🔒 Server lockout status:', data);
+      
+      if (data.isLocked) {
+        setIsLocked(true);
+        setLockoutRemainingSeconds(data.remainingSeconds || 0);
+        setAttemptsRemaining(0);
+        setWarningMessage(null);
+      } else {
+        setIsLocked(false);
+        setLockoutRemainingSeconds(0);
+        setAttemptsRemaining(data.attemptsRemaining);
+        
+        // Show warning if attempts are low
+        if (data.attemptsRemaining <= 2 && data.failedAttempts > 0) {
+          setWarningMessage(`Warning: ${data.attemptsRemaining} attempt(s) remaining before account lockout.`);
+        } else {
+          setWarningMessage(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking lockout status:', error);
+      // Don't block login on error - let the login attempt handle it
+    }
+  }, []);
+
+  // Countdown timer for lockout with periodic server sync
+  useEffect(() => {
+    let countdownInterval;
+    let syncInterval;
+    
+    if (isLocked && lockoutRemainingSeconds > 0) {
+      // Local countdown every second
+      countdownInterval = setInterval(() => {
+        setLockoutRemainingSeconds(prev => {
+          if (prev <= 1) {
+            // When timer ends, verify with server
+            checkServerLockoutStatus(email);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Sync with server every 30 seconds to prevent drift/tampering
+      syncInterval = setInterval(() => {
+        if (email) {
+          checkServerLockoutStatus(email);
+        }
+      }, 30000);
+    }
+    
+    return () => {
+      clearInterval(countdownInterval);
+      clearInterval(syncInterval);
+    };
+  }, [isLocked, lockoutRemainingSeconds, email, checkServerLockoutStatus]);
+
+  // Check lockout status when email changes (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (email && email.includes('@')) {
+        checkServerLockoutStatus(email);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [email, checkServerLockoutStatus]);
+
+  // Also check on page load if there's a stored email (from browser autofill)
+  useEffect(() => {
+    // Small delay to allow browser autofill to populate
+    const timeoutId = setTimeout(() => {
+      if (email && email.includes('@')) {
+        checkServerLockoutStatus(email);
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [checkServerLockoutStatus]); // Added dependency
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -36,18 +142,41 @@ const LoginPage = () => {
       console.error("Error response data:", err.response?.data);
       console.error("Error status:", err.response?.status);
       
+      const responseData = err.response?.data;
       let message = "Invalid credentials. Please check your email and password.";
       
       if (err.response) {
-        // Use server message if available
-        message = err.response.data?.message || message;
-        
-        // Keep specific messages for deactivated accounts
-        if (message.toLowerCase().includes('deactivated')) {
-          // Keep the deactivated message as-is
-        } else if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
-          // Standardize invalid credentials message
-          message = "Invalid credentials. Please check your email and password.";
+        // Check if account is locked (HTTP 429 Too Many Requests)
+        if (err.response.status === 429 || responseData?.isLocked) {
+          setIsLocked(true);
+          setLockoutRemainingSeconds(responseData?.remainingSeconds || 1800); // Default 30 min
+          setAttemptsRemaining(0);
+          message = responseData?.message || "Account temporarily locked due to too many failed attempts.";
+        } else {
+          // Handle remaining attempts
+          if (responseData?.attemptsRemaining !== undefined) {
+            setAttemptsRemaining(responseData.attemptsRemaining);
+          }
+          
+          // Handle warning message
+          if (responseData?.warningMessage) {
+            setWarningMessage(responseData.warningMessage);
+          } else {
+            setWarningMessage(null);
+          }
+          
+          // Use server message if available
+          message = responseData?.message || message;
+          
+          // Keep specific messages for deactivated accounts
+          if (message.toLowerCase().includes('deactivated')) {
+            // Keep the deactivated message as-is
+          } else if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
+            // Keep the server message but add attempts info if available
+            if (responseData?.attemptsRemaining !== undefined) {
+              message = `Invalid credentials. ${responseData.attemptsRemaining} attempt(s) remaining.`;
+            }
+          }
         }
       } else {
         // Network error or no response
@@ -102,6 +231,111 @@ const LoginPage = () => {
           </p>
         </div>
 
+        {/* Lockout Banner */}
+        <AnimatePresence>
+          {isLocked && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className={`mb-6 p-4 rounded-lg border-2 ${
+                isDarkMode 
+                  ? 'bg-red-900/30 border-red-700' 
+                  : 'bg-red-50 border-red-300'
+              }`}
+            >
+              <div className="flex items-center space-x-3 mb-3">
+                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-red-800' : 'bg-red-200'}`}>
+                  <Lock className={`${isDarkMode ? 'text-red-300' : 'text-red-600'}`} size={20} />
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                    Account Temporarily Locked
+                  </h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                    Too many failed login attempts
+                  </p>
+                </div>
+              </div>
+              <div className={`flex items-center justify-center space-x-2 p-3 rounded-lg ${
+                isDarkMode ? 'bg-red-900/50' : 'bg-red-100'
+              }`}>
+                <Clock className={`${isDarkMode ? 'text-red-300' : 'text-red-600'}`} size={18} />
+                <span className={`font-mono text-lg font-bold ${isDarkMode ? 'text-red-200' : 'text-red-700'}`}>
+                  {formatTime(lockoutRemainingSeconds)}
+                </span>
+                <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                  until unlock
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Warning Banner - Shows when attempts are low */}
+        <AnimatePresence>
+          {!isLocked && warningMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`mb-4 p-3 rounded-lg border ${
+                isDarkMode 
+                  ? 'bg-yellow-900/30 border-yellow-700' 
+                  : 'bg-yellow-50 border-yellow-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className={`${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`} size={18} />
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                  {warningMessage}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Attempts Indicator - Shows remaining attempts after at least 1 failed attempt */}
+        <AnimatePresence>
+          {!isLocked && attemptsRemaining !== null && attemptsRemaining > 0 && attemptsRemaining < 5 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={`mb-4 flex items-center justify-center space-x-2`}
+            >
+              <div className="flex space-x-1">
+                {[...Array(5)].map((_, index) => {
+                  // Calculate: first N dots are red (used), remaining are green (available)
+                  const usedAttempts = 5 - attemptsRemaining;
+                  const isUsed = index < usedAttempts;
+                  const isRemaining = index < usedAttempts + attemptsRemaining;
+                  
+                  return (
+                    <div
+                      key={index}
+                      className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                        isUsed
+                          ? 'bg-red-500' // Used attempts (failed)
+                          : isRemaining
+                          ? 'bg-green-500' // Remaining attempts (available)
+                          : isDarkMode ? 'bg-gray-600' : 'bg-gray-300' // Shouldn't happen
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <span className={`text-xs font-medium ${
+                attemptsRemaining <= 2 
+                  ? isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+                  : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {attemptsRemaining}/5 attempts remaining
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1 transition-colors duration-300`}>
@@ -112,10 +346,10 @@ const LoginPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full px-4 py-2 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300`}
+              className={`w-full px-4 py-2 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
               placeholder="Enter your email"
               required
-              disabled={loading}
+              disabled={loading || isLocked}
             />
           </div>
 
@@ -129,10 +363,10 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full px-4 py-2 pr-10 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300`}
+                className={`w-full px-4 py-2 pr-10 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                 placeholder="Enter your password"
                 required
-                disabled={loading}
+                disabled={loading || isLocked}
               />
               <button
                 type="button"
@@ -147,13 +381,18 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 flex items-center justify-center"
-            disabled={loading}
+            className={`w-full py-2 px-4 ${isLocked ? 'bg-gray-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 flex items-center justify-center`}
+            disabled={loading || isLocked}
           >
             {loading ? (
               <>
                 <Loader size={18} className="animate-spin mr-2" />
                 Signing In...
+              </>
+            ) : isLocked ? (
+              <>
+                <Lock size={18} className="mr-2" />
+                Account Locked
               </>
             ) : (
               "Sign In"
@@ -236,6 +475,65 @@ const LoginPage = () => {
                     {errorMessage}
                   </p>
                 </div>
+
+                {/* Show lockout timer in modal if locked */}
+                {isLocked && (
+                  <div className={`mb-4 p-4 rounded-lg flex items-center justify-center space-x-3 ${
+                    isDarkMode ? 'bg-orange-900/20 border border-orange-800' : 'bg-orange-50 border border-orange-200'
+                  }`}>
+                    <Clock className={`${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} size={24} />
+                    <div className="text-center">
+                      <p className={`text-xs ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                        Time remaining
+                      </p>
+                      <p className={`font-mono text-2xl font-bold ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>
+                        {formatTime(lockoutRemainingSeconds)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show attempts remaining if not locked */}
+                {!isLocked && attemptsRemaining !== null && (
+                  <div className={`mb-4 p-3 rounded-lg ${
+                    attemptsRemaining <= 2
+                      ? isDarkMode ? 'bg-yellow-900/20 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200'
+                      : isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-100 border border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Login attempts:
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, index) => {
+                            // First N dots are red (used), remaining are green (available)
+                            const usedAttempts = 5 - attemptsRemaining;
+                            const isUsed = index < usedAttempts;
+                            
+                            return (
+                              <div
+                                key={index}
+                                className={`w-3 h-3 rounded-full ${
+                                  isUsed
+                                    ? 'bg-red-500' // Used attempts (failed)
+                                    : 'bg-green-500' // Remaining attempts (available)
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <span className={`font-bold ${
+                          attemptsRemaining <= 2
+                            ? isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+                            : isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                        }`}>
+                          {attemptsRemaining}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className={`space-y-2 text-sm ${
                   isDarkMode ? 'text-gray-300' : 'text-gray-600'
