@@ -58,7 +58,8 @@ const DistanceRadiusManagement = () => {
 			await appSettingsService.updateSetting(
 				'DISTANCE_RADIUS',
 				distanceRadius,
-				'Maximum distance radius for showing nearby riders/bookings'
+				'Maximum distance radius for showing nearby riders/bookings',
+				false
 			);
 
 			setOriginalValue(distanceRadius);
@@ -96,7 +97,8 @@ const DistanceRadiusManagement = () => {
 			await appSettingsService.updateSetting(
 				'DISTANCE_RADIUS',
 				DEFAULT_DISTANCE_RADIUS,
-				'Maximum distance radius for showing nearby riders/bookings'
+				'Maximum distance radius for showing nearby riders/bookings',
+				true
 			);
 
 			setDistanceRadius(DEFAULT_DISTANCE_RADIUS);

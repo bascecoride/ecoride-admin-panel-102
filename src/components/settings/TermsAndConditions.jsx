@@ -107,7 +107,7 @@ Welcome to EcoRide-BASC, a ride-sharing system developed to promote an eco-frien
       const token = localStorage.getItem('admin_access_token');
       const response = await axios.post(
         `${API_URL}/api/terms/update`,
-        { content, version },
+        { content, version, isReset: false },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -144,7 +144,7 @@ Welcome to EcoRide-BASC, a ride-sharing system developed to promote an eco-frien
       const token = localStorage.getItem('admin_access_token');
       const response = await axios.post(
         `${API_URL}/api/terms/update`,
-        { content: defaultContent, version: defaultVersion },
+        { content: defaultContent, version: defaultVersion, isReset: true },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

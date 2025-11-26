@@ -56,13 +56,14 @@ export const appSettingsService = {
   },
 
   // Update setting (admin only)
-  updateSetting: async (settingKey, value, description) => {
+  updateSetting: async (settingKey, value, description, isReset = false) => {
     try {
       const api = createAuthenticatedRequest();
       const response = await api.put('/api/app-settings', {
         settingKey,
         value,
-        description
+        description,
+        isReset
       });
       return response.data;
     } catch (error) {

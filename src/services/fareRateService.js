@@ -59,11 +59,11 @@ export const fareRateService = {
 	},
 
 	// Bulk update fare rates (admin only)
-	bulkUpdateFareRates: async (fareRates) => {
+	bulkUpdateFareRates: async (fareRates, isReset = false) => {
 		try {
 			const response = await axios.put(
 				API_URL,
-				{ fareRates },
+				{ fareRates, isReset },
 				createAuthHeaders()
 			);
 			return response.data.fareRates;

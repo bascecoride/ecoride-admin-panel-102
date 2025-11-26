@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Filter, Calendar, User, FileText, Shield } from "lucide-react";
+import { Filter, Calendar, User, FileText, Shield, Settings, DollarSign, MapPin, FileCheck } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { adminManagementService } from "../services/adminManagementService";
 import Header from "../components/common/Header";
@@ -66,8 +66,31 @@ const ActivityLogPage = () => {
       DELETED_ADMIN: "bg-red-100 text-red-800",
       DEACTIVATED_ADMIN: "bg-orange-100 text-orange-800",
       ACTIVATED_ADMIN: "bg-green-100 text-green-800",
+      // Settings-related actions
+      UPDATED_FARE_RATE: "bg-yellow-100 text-yellow-800",
+      RESET_FARE_RATES: "bg-yellow-100 text-yellow-800",
+      UPDATED_TERMS: "bg-indigo-100 text-indigo-800",
+      RESET_TERMS: "bg-indigo-100 text-indigo-800",
+      UPDATED_DISTANCE_RADIUS: "bg-cyan-100 text-cyan-800",
+      RESET_DISTANCE_RADIUS: "bg-cyan-100 text-cyan-800",
+      UPDATED_SETTING: "bg-teal-100 text-teal-800",
     };
     return colors[action] || "bg-gray-100 text-gray-800";
+  };
+
+  const getTargetIcon = (targetType) => {
+    switch (targetType) {
+      case 'FARE_RATE':
+        return <DollarSign size={16} className="mr-2 text-yellow-500" />;
+      case 'TERMS':
+        return <FileCheck size={16} className="mr-2 text-indigo-500" />;
+      case 'SETTING':
+        return <MapPin size={16} className="mr-2 text-cyan-500" />;
+      case 'ADMIN':
+        return <Shield size={16} className="mr-2 text-purple-500" />;
+      default:
+        return <User size={16} className="mr-2 text-gray-400" />;
+    }
   };
 
   const formatActionName = (action) => {
@@ -99,17 +122,29 @@ const ActivityLogPage = () => {
                 className={`w-full px-3 py-2 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} border ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} rounded-md`}
               >
                 <option value="">All Actions</option>
-                <option value="APPROVED_USER">Approved User</option>
-                <option value="DISAPPROVED_USER">Disapproved User</option>
-                <option value="DELETED_USER">Deleted User</option>
-                <option value="EDITED_USER">Edited User</option>
-                <option value="ADDED_PENALTY">Added Penalty</option>
-                <option value="REMOVED_PENALTY">Removed Penalty</option>
-                <option value="CREATED_ADMIN">Created Admin</option>
-                <option value="UPDATED_ADMIN">Updated Admin</option>
-                <option value="DELETED_ADMIN">Deleted Admin</option>
-                <option value="DEACTIVATED_ADMIN">Deactivated Admin</option>
-                <option value="ACTIVATED_ADMIN">Activated Admin</option>
+                <optgroup label="User Actions">
+                  <option value="APPROVED_USER">Approved User</option>
+                  <option value="DISAPPROVED_USER">Disapproved User</option>
+                  <option value="DELETED_USER">Deleted User</option>
+                  <option value="EDITED_USER">Edited User</option>
+                  <option value="ADDED_PENALTY">Added Penalty</option>
+                  <option value="REMOVED_PENALTY">Removed Penalty</option>
+                </optgroup>
+                <optgroup label="Admin Actions">
+                  <option value="CREATED_ADMIN">Created Admin</option>
+                  <option value="UPDATED_ADMIN">Updated Admin</option>
+                  <option value="DELETED_ADMIN">Deleted Admin</option>
+                  <option value="DEACTIVATED_ADMIN">Deactivated Admin</option>
+                  <option value="ACTIVATED_ADMIN">Activated Admin</option>
+                </optgroup>
+                <optgroup label="Settings Actions">
+                  <option value="UPDATED_FARE_RATE">Updated Fare Rate</option>
+                  <option value="RESET_FARE_RATES">Reset Fare Rates</option>
+                  <option value="UPDATED_TERMS">Updated Terms</option>
+                  <option value="RESET_TERMS">Reset Terms</option>
+                  <option value="UPDATED_DISTANCE_RADIUS">Updated Distance Radius</option>
+                  <option value="RESET_DISTANCE_RADIUS">Reset Distance Radius</option>
+                </optgroup>
               </select>
             </div>
 
@@ -126,6 +161,9 @@ const ActivityLogPage = () => {
                 <option value="USER">User</option>
                 <option value="ADMIN">Admin</option>
                 <option value="RIDE">Ride</option>
+                <option value="FARE_RATE">Fare Rate</option>
+                <option value="TERMS">Terms & Conditions</option>
+                <option value="SETTING">Settings</option>
               </select>
             </div>
 
@@ -238,7 +276,7 @@ const ActivityLogPage = () => {
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                         <div className="flex items-center">
-                          <User size={16} className="mr-2 text-gray-400" />
+                          {getTargetIcon(log.targetType)}
                           <div>
                             <div className="font-medium">{log.targetName}</div>
                             <div className="text-xs text-gray-500">{log.targetType}</div>
@@ -260,7 +298,7 @@ const ActivityLogPage = () => {
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4`}>
             <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Activities</div>
             <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -277,6 +315,12 @@ const ActivityLogPage = () => {
             <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Admin Actions</div>
             <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {logs.filter((log) => log.targetType === "ADMIN").length}
+            </div>
+          </div>
+          <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4`}>
+            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Settings Changes</div>
+            <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {logs.filter((log) => ["FARE_RATE", "TERMS", "SETTING"].includes(log.targetType)).length}
             </div>
           </div>
         </div>

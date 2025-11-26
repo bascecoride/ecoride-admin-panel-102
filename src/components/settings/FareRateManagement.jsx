@@ -105,7 +105,7 @@ const FareRateManagement = () => {
 				perKmRate: editedRates[vehicleType].perKmRate
 			}));
 
-			await fareRateService.bulkUpdateFareRates(ratesToUpdate);
+			await fareRateService.bulkUpdateFareRates(ratesToUpdate, false);
 			
 			// Refresh data
 			await fetchFareRates();
@@ -150,7 +150,7 @@ const FareRateManagement = () => {
 				perKmRate: defaultFareRates[vehicleType].perKmRate
 			}));
 
-			await fareRateService.bulkUpdateFareRates(ratesToUpdate);
+			await fareRateService.bulkUpdateFareRates(ratesToUpdate, true);
 
 			// Refresh data from server
 			await fetchFareRates();
