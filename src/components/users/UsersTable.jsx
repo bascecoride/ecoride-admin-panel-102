@@ -413,12 +413,17 @@ const UsersTable = ({
                           <CheckCircle className="h-3 w-3 mr-1" /> License
                         </span>
                       )}
-                      {(user.role === "rider" && user.cor) && (
+                      {(user.role === "rider" && user.orCr) && (
+                        <span className="text-xs text-green-400 flex items-center">
+                          <CheckCircle className="h-3 w-3 mr-1" /> OR/CR
+                        </span>
+                      )}
+                      {user.cor && (
                         <span className="text-xs text-green-400 flex items-center">
                           <CheckCircle className="h-3 w-3 mr-1" /> COR
                         </span>
                       )}
-                      {!user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && !user.driverLicense && !user.cor && (
+                      {!user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && !user.driverLicense && !user.orCr && !user.cor && (
                         <span className="text-xs text-gray-400">
                           No documents
                         </span>

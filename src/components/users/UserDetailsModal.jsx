@@ -971,6 +971,7 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                     {user.userRole === 'Faculty' || user.userRole === 'Staff' ? (
                       <ImageViewer url={user.staffFacultyIdDocument} title="Staff/Faculty ID Document" />
                     ) : null}
+                    <ImageViewer url={user.cor} title="Certificate of Registration (COR)" />
                   </>
                 )}
                 
