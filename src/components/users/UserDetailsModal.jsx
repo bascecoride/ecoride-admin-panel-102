@@ -956,6 +956,118 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                   </div>
                 </div>
               )}
+
+              {/* PWD Information Section */}
+              {currentUser.isPWD && (
+                <div className={`mt-4 border-t pt-4 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} transition-colors duration-300`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-medium flex items-center ${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-300`}>
+                      <span className="mr-2">♿</span> PWD Information
+                    </h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      currentUser.pwdVerified 
+                        ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' 
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    }`}>
+                      {currentUser.pwdVerified ? '✓ Verified' : '⏳ Pending Verification'}
+                    </span>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${
+                    currentUser.pwdVerified 
+                      ? isDarkMode ? 'border-teal-700' : 'border-teal-200'
+                      : isDarkMode ? 'border-yellow-700' : 'border-yellow-200'
+                  }`}>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>PWD Status</h4>
+                        <p className={`${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                          {currentUser.isPWD ? 'Yes - User claims PWD status' : 'No'}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>PWD Card Submitted</h4>
+                        <p className={`${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                          {currentUser.pwdCardDocument ? 'Yes - Document uploaded' : 'No - No document uploaded'}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Verification Status</h4>
+                        <p className={`font-medium ${currentUser.pwdVerified ? 'text-teal-500' : 'text-yellow-500'}`}>
+                          {currentUser.pwdVerified ? 'Verified by Admin' : 'Awaiting Admin Verification'}
+                        </p>
+                      </div>
+                      {currentUser.pwdVerified && (
+                        <div className={`p-3 rounded-md ${isDarkMode ? 'bg-teal-900/30' : 'bg-teal-50'} border ${isDarkMode ? 'border-teal-800' : 'border-teal-200'}`}>
+                          <p className={`text-sm ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
+                            ✓ This user is eligible for PWD discounts on rides
+                          </p>
+                        </div>
+                      )}
+                      {!currentUser.pwdVerified && currentUser.pwdCardDocument && (
+                        <div className={`p-3 rounded-md ${isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'} border ${isDarkMode ? 'border-yellow-800' : 'border-yellow-200'}`}>
+                          <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                            ⚠️ Please review the PWD card document below and verify if valid
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* PWD Verification Actions */}
+                    <div className="mt-4 pt-4 border-t border-gray-600 flex space-x-3">
+                      {!currentUser.pwdVerified ? (
+                        <button
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              setError(null);
+                              const updatedUser = await userService.verifyPWD(user._id, true);
+                              setCurrentUser(updatedUser);
+                              setSuccess('PWD status verified successfully!');
+                              setTimeout(() => {
+                                onUserUpdated(updatedUser);
+                              }, 1500);
+                            } catch (err) {
+                              setError(err.message || 'Failed to verify PWD status');
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                          className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                        >
+                          {loading ? <Loader size={16} className="mr-2 animate-spin" /> : <CheckCircle size={16} className="mr-2" />}
+                          Verify PWD Status
+                        </button>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              setError(null);
+                              const updatedUser = await userService.verifyPWD(user._id, false);
+                              setCurrentUser(updatedUser);
+                              setSuccess('PWD verification removed');
+                              setTimeout(() => {
+                                onUserUpdated(updatedUser);
+                              }, 1500);
+                            } catch (err) {
+                              setError(err.message || 'Failed to update PWD status');
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                          className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                        >
+                          {loading ? <Loader size={16} className="mr-2 animate-spin" /> : <XCircle size={16} className="mr-2" />}
+                          Revoke PWD Verification
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Documents and Images Section */}
               <div className={`mt-4 border-t pt-4 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} transition-colors duration-300`}>
@@ -982,6 +1094,11 @@ const UserDetailsModal = ({ user, onClose, onUserUpdated }) => {
                     <ImageViewer url={user.orCr} title="OR/CR (Official Receipt/Certificate of Registration)" />
                     <ImageViewer url={user.cor} title="Certificate of Registration (Student)" />
                   </>
+                )}
+
+                {/* PWD Card Document */}
+                {user.isPWD && user.pwdCardDocument && (
+                  <ImageViewer url={user.pwdCardDocument} title="PWD Card Document" />
                 )}
                 
                 {!user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && 

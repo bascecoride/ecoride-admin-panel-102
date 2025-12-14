@@ -4,6 +4,7 @@ import AccountInfo from "../components/settings/AccountInfo";
 import ChangePassword from "../components/settings/ChangePassword";
 import FareRateManagement from "../components/settings/FareRateManagement";
 import DistanceRadiusManagement from "../components/settings/DistanceRadiusManagement";
+import PWDDiscountManagement from "../components/settings/PWDDiscountManagement";
 import TermsAndConditions from "../components/settings/TermsAndConditions";
 import DangerZone from "../components/settings/DangerZone";
 import { useTheme } from "../context/ThemeContext";
@@ -29,6 +30,9 @@ const SettingsPage = () => {
 				
 				{/* Distance Radius Management */}
 				<DistanceRadiusManagement />
+				
+				{/* PWD Discount Management */}
+				<PWDDiscountManagement />
 				
 				{/* Terms and Conditions Management */}
 				<TermsAndConditions />

@@ -43,6 +43,17 @@ export const appSettingsService = {
     }
   },
 
+  // Get PWD discount (public endpoint - no auth required)
+  getPWDDiscount: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/app-settings/pwd-discount`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching PWD discount:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch PWD discount');
+    }
+  },
+
   // Get specific setting by key (admin only)
   getSettingByKey: async (key) => {
     try {

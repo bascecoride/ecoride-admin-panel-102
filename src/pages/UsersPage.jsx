@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Users, UserCheck, UserX, Loader } from "lucide-react";
+import { Users, UserCheck, UserX, Loader, Accessibility } from "lucide-react";
 import UsersTable from "../components/users/UsersTable";
 import { userService } from "../services/userService";
 
@@ -36,7 +36,10 @@ const UsersPage = () => {
     pending: 0,
     disapproved: 0,
     customers: 0,
-    riders: 0
+    riders: 0,
+    pwdUsers: 0,
+    pwdVerified: 0,
+    pwdPending: 0
   });
   const [actionInProgress, setActionInProgress] = useState(null);
   // Single filters object to store all filter values
@@ -226,6 +229,9 @@ const UsersPage = () => {
       const disapproved = validUsers.filter(user => user.status === "disapproved").length;
       const customers = validUsers.filter(user => user.role === 'customer').length;
       const riders = validUsers.filter(user => user.role === 'rider').length;
+      const pwdUsers = validUsers.filter(user => user.isPWD === true).length;
+      const pwdVerified = validUsers.filter(user => user.isPWD === true && user.pwdVerified === true).length;
+      const pwdPending = validUsers.filter(user => user.isPWD === true && user.pwdVerified !== true).length;
       
       setStats({
         total,
@@ -233,7 +239,10 @@ const UsersPage = () => {
         pending,
         disapproved,
         customers,
-        riders
+        riders,
+        pwdUsers,
+        pwdVerified,
+        pwdPending
       });
     } catch (error) {
       console.error('Error updating stats:', error);
@@ -244,7 +253,10 @@ const UsersPage = () => {
         pending: 0,
         disapproved: 0,
         customers: 0,
-        riders: 0
+        riders: 0,
+        pwdUsers: 0,
+        pwdVerified: 0,
+        pwdPending: 0
       });
     }
   };
@@ -355,6 +367,18 @@ const UsersPage = () => {
           value={loading ? <Loader size={24} className="animate-spin" /> : stats.riders}
           icon={<Users size={24} />}
           color="bg-indigo-600"
+        />
+        <StatCard
+          title="PWD Users"
+          value={loading ? <Loader size={24} className="animate-spin" /> : stats.pwdUsers}
+          icon={<Accessibility size={24} />}
+          color="bg-teal-600"
+        />
+        <StatCard
+          title="PWD Verified"
+          value={loading ? <Loader size={24} className="animate-spin" /> : stats.pwdVerified}
+          icon={<Accessibility size={24} />}
+          color="bg-cyan-600"
         />
       </div>
 

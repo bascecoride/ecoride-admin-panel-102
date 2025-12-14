@@ -156,6 +156,20 @@ export const userService = {
       throw error;
     }
   },
+
+  // Verify or revoke PWD status
+  verifyPWD: async (userId, verified) => {
+    try {
+      console.log(`${verified ? 'Verifying' : 'Revoking'} PWD status for user: ${userId}`);
+      const request = createAuthenticatedRequest();
+      const response = await request.put(`/admin/users/${userId}/verify-pwd`, { pwdVerified: verified });
+      console.log('PWD verification response:', response.data);
+      return response.data.user;
+    } catch (error) {
+      console.error(`Error updating PWD status for user ${userId}:`, error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to update PWD verification status');
+    }
+  },
   
   // Get current user profile
   getProfile: async () => {

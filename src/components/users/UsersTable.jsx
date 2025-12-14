@@ -10,7 +10,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader
+  Loader,
+  Accessibility
 } from "lucide-react";
 import UserDetailsModal from "./UserDetailsModal";
 import { useTheme } from "../../context/ThemeContext";
@@ -378,6 +379,12 @@ const UsersTable = ({
                           {user.vehicleType}
                         </span>
                       )}
+                      {user.isPWD && (
+                        <span className={`px-2 mt-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.pwdVerified ? 'bg-teal-100 text-teal-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          <Accessibility size={12} className="mr-1" />
+                          PWD {user.pwdVerified ? '✓' : '(Unverified)'}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -421,6 +428,11 @@ const UsersTable = ({
                       {user.cor && (
                         <span className="text-xs text-green-400 flex items-center">
                           <CheckCircle className="h-3 w-3 mr-1" /> COR
+                        </span>
+                      )}
+                      {user.isPWD && user.pwdCardDocument && (
+                        <span className={`text-xs flex items-center ${user.pwdVerified ? 'text-teal-400' : 'text-yellow-400'}`}>
+                          <Accessibility className="h-3 w-3 mr-1" /> PWD Card {user.pwdVerified ? '✓' : '(Pending)'}
                         </span>
                       )}
                       {!user.photo && !user.schoolIdDocument && !user.staffFacultyIdDocument && !user.driverLicense && !user.orCr && !user.cor && (
